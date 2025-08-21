@@ -1,75 +1,110 @@
 const { Server } = require("socket.io");
 const cookie = require("cookie");
-const jwt = require('jsonwebtoken');
-const userModel = require('../models/user.model');
-const aiService = require('../services/ai.service');
-const messageModel = require('../models/message.model');
+const jwt = require("jsonwebtoken");
+const userModel = require("../models/user.model");
+const aiService = require("../services/ai.service");
+const messageModel = require("../models/message.model");
+const { createMemory, queryMemory } = require("../services/vector.service");
+const {
+  chat,
+} = require("@pinecone-database/pinecone/dist/assistant/data/chat");
 
 function initSocketServer(httpServer) {
   const io = new Server(httpServer, {});
 
-  io.use(async(socket, next)=>{
-    const cookies = cookie.parse(socket.handshake.headers?.cookie || '');
+  io.use(async (socket, next) => {
+    const cookies = cookie.parse(socket.handshake.headers?.cookie || "");
 
-    if(!cookies.token) {
+    if (!cookies.token) {
       next(new Error("Authentication error: No token provided"));
     }
 
     try {
-      const decoded =jwt.verify(cookies.token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(cookies.token, process.env.JWT_SECRET);
 
       const user = await userModel.findById(decoded.id);
 
       socket.user = user;
 
       next();
-
     } catch (error) {
       next(new Error("Authentication error: Invalid token"));
     }
-
   });
 
   io.on("connection", (socket) => {
-    
-
-    socket.on("ai-message", async (messagePayload)=>{
-
-      await messageModel.create({
+    socket.on("ai-message", async (messagePayload) => {
+      const message = await messageModel.create({
         chat: messagePayload.chat,
         user: socket.user._id,
         content: messagePayload.content,
-        role: 'user'
-      })
+        role: "user",
+      });
 
-      const chatHistory = await messageModel.find({
-        chat: messagePayload.chat
-      }).sort({ createdAt: -1 }).limit(4).reverse();
+      const vectors = await aiService.generateVectors(messagePayload.content);
 
-      
+      const memory = await queryMemory({
+        queryVector: vectors,
+        limit: 3,
+        metadata: {
+          
+        },
+      });
 
-      const response = await aiService.genreateResponce(chatHistory.map(item =>{
-        return {
-          role : item.role,
-          parts : [{text: item.content}]
-        }
-      }));
-
-        await messageModel.create({
+      await createMemory({
+        vectors,
+        messageID: message._id,
+        metadata: {
           chat: messagePayload.chat,
           user: socket.user._id,
-          content: response,
-          role: 'model'
-        })
+          Text: messagePayload.content,
+        },
+      });
 
-        socket.emit("ai-responce" , {
-          content: response,
-          chat: messagePayload.chat
-        })
-    })
+      const chatHistory = (
+        await messageModel
+          .find({
+            chat: messagePayload.chat,
+          })
+          .sort({ createdAt: -1 })
+          .limit(4)
+          .lean()
+      ).reverse();
 
+      const response = await aiService.genreateResponce(
+        chatHistory.map((item) => {
+          return {
+            role: item.role,
+            parts: [{ text: item.content }],
+          };
+        })
+      );
+
+      const responceMessage = await messageModel.create({
+        chat: messagePayload.chat,
+        user: socket.user._id,
+        content: response,
+        role: "model",
+      });
+
+      const responceVector = await aiService.generateVectors(response);
+
+      await createMemory({
+        vectors: responceVector,
+        messageID: responceMessage._id,
+        metadata: {
+          chat: messagePayload.chat,
+          user: socket.user._id,
+          Text: response,
+        },
+      });
+
+      socket.emit("ai-responce", {
+        content: response,
+        chat: messagePayload.chat,
+      });
+    });
   });
 }
 
 module.exports = initSocketServer;
-    
