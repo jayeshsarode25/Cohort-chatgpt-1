@@ -1,25 +1,24 @@
 const mongoose = require('mongoose');
 
 
-const chatSchema = new mongoose.Schema({
+const chatSchame = new mongoose.Schema({
     user:{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'user',
         required: true
     },
     title:{
-        type:String,
+        type: String,
         required: true
     },
-    lastActivity:{
+    lastActivityAt: {
         type: Date,
         default: Date.now
     }
-},
-{
+},{
     timestamps: true
 })
 
-const chatModel = mongoose.model('chat', chatSchema);
+const chatModel = mongoose.model('chat', chatSchame);
 
 module.exports = chatModel;
