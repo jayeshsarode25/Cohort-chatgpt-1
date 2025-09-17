@@ -15,7 +15,7 @@ const Home = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false); // mobile off-canvas
 
   const activeChat = chats.find(c => c.id === activeChatId) || null;
-  const messages = activeChat ? activeChat.messages : [];
+  useSta
 
   const startNewChat = useCallback(() => {
     const title = prompt('Enter a title for the new chat');
