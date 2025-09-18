@@ -1,5 +1,5 @@
 const chatModel = require('../models/chat.model');
-
+const messageModel = require('../models/message.model');
 
 async function createChat(req, res) {
     const { title } = req.body;
