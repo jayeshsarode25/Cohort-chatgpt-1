@@ -26,7 +26,7 @@ const Home = () => {
     if (title) title = title.trim();
     if (!title) return;
 
-    const response = await axios.post("http://localhost:3000/api/chat", { title }, { withCredentials: true });
+    const response = await axios.post("https://cohort-chatgpt-1-1.onrender.com/api/chat", { title }, { withCredentials: true });
 
     getMessages(response.data.chat._id);
 
@@ -43,14 +43,14 @@ const Home = () => {
     // ensure there's at least one chat on mount
     // dispatch(ensureInitialChat());
 
-    axios.get("http://localhost:3000/api/chat", { withCredentials: true }).then
+    axios.get("https://cohort-chatgpt-1-1.onrender.com/api/chat", { withCredentials: true }).then
     (response => {
       console.log(response.data);
       dispatch(setChats(response.data.chats.reverse()));
     })
 
 
-    const tempSocket = io("http://localhost:3000", { withCredentials: true })
+    const tempSocket = io("https://cohort-chatgpt-1-1.onrender.com", { withCredentials: true })
 
     tempSocket.on("ai-response", (messagePayload) => {
       console.log("Received AI message:", messagePayload);
@@ -98,7 +98,7 @@ const Home = () => {
 
   const getMessages = async (chatId) => {
 
-   const response = await  axios.get(`http://localhost:3000/api/chat/messages/${chatId}`, { withCredentials: true })
+   const response = await  axios.get(`https://cohort-chatgpt-1-1.onrender.com/api/chat/messages/${chatId}`, { withCredentials: true })
 
    console.log("Fetched messages:", response.data.messages);
 
