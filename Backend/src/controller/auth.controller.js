@@ -4,8 +4,8 @@ const jwt = require('jsonwebtoken');
 
 
 async function userRegister(req, res) {
-    const{ fullname:{firstname,lastname}, email, password} = req.body;
-
+    const{  email,fullname:{firstname,lastname}, password} = req.body;
+    // console.log(req.body)
     isUserExit = await userModel.findOne({
         email
     })
