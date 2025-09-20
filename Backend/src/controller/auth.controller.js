@@ -8,7 +8,7 @@ async function userRegister(req, res) {
     fullname: { firstname, lastname },
     password,
   } = req.body;
-  // console.log(req.body)
+  console.log(req.body)
   isUserExit = await userModel.findOne({
     email,
   });
